@@ -44,6 +44,9 @@ func main() {
 	mux.HandleFunc("/user/", common.MakeHandlerFuncMap(map[string]common.ApiFunc{
 		"GET": user.HandleGetUser,
 	}))
+	mux.HandleFunc("/user/phone", common.MakeHandlerFuncMap(map[string]common.ApiFunc{
+		"POST": user.HandleAddPhone,
+	}))
 
 	log.Fatal(http.ListenAndServe(":3000", mux))
 	defer db.Pool.Close()

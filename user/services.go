@@ -11,6 +11,24 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func (apr AddPhoneReq) validate() error {
+	errors := make(map[string]string)
+
+	if len(apr.phone) == 0 {
+		errors["phone"] = "Phone is required"
+	}
+
+	if len(apr.description) == 0 {
+		errors["description"] = "Description is required"
+	}
+
+	if len(errors) > 0 {
+		return common.ErrValidation("Validation failed", errors)
+	}
+
+	return nil
+}
+
 func New(opts Opts) *User {
 	return &User{
 		Name:     opts.Name,
@@ -94,4 +112,30 @@ func getByName(name string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func addPhone(opts AddPhoneOpts) (*Phone, error) {
+	phone := Phone{
+		Phone:       opts.phone,
+		UserID:      opts.userId,
+		Description: opts.description,
+		IsFax:       opts.isFax,
+	}
+
+	row := db.Pool.QueryRow(
+		context.Background(),
+		"insert into user_phones (user_id, phone, description, is_fax) values ($1, $2, $3, $4) returning id",
+		opts.userId, opts.phone, opts.description, opts.isFax,
+	)
+
+	if err := row.Scan(&phone.ID); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			return nil, common.ErrConflict("User already exists")
+		}
+
+		return nil, common.ErrInternal
+	}
+
+	return &phone, nil
 }
