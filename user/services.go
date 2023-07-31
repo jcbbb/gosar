@@ -73,3 +73,25 @@ func GetByLogin(login string) (*User, error) {
 
 	return &user, nil
 }
+
+func getByName(name string) (*User, error) {
+	var user User
+	row := db.Pool.QueryRow(
+		context.Background(),
+		"select id, name, login, age, password from users where name = $1",
+		name,
+	)
+
+	err := row.Scan(&user.ID, &user.Name, &user.Login, &user.Age, &user.Password)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			return nil, common.ErrConflict("User already exists")
+		}
+
+		return nil, common.ErrInternal
+	}
+
+	return &user, nil
+}

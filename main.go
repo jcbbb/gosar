@@ -11,6 +11,7 @@ import (
 	"github.com/jcbbb/gosar/auth"
 	"github.com/jcbbb/gosar/common"
 	"github.com/jcbbb/gosar/db"
+	"github.com/jcbbb/gosar/user"
 	"github.com/joho/godotenv"
 )
 
@@ -38,6 +39,10 @@ func main() {
 
 	mux.HandleFunc("/user/auth", common.MakeHandlerFuncMap(map[string]common.ApiFunc{
 		"POST": auth.HandleLogin,
+	}))
+
+	mux.HandleFunc("/user/", common.MakeHandlerFuncMap(map[string]common.ApiFunc{
+		"GET": user.HandleGetUser,
 	}))
 
 	log.Fatal(http.ListenAndServe(":3000", mux))
