@@ -2,9 +2,11 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 var (
@@ -74,4 +76,20 @@ func GetEnvInt(key string, def int) int {
 	}
 
 	return v
+}
+
+func GetEnvStr(key string, def string) string {
+	s := os.Getenv(key)
+	if len(s) == 0 {
+		return def
+	}
+
+	return s
+}
+
+func Perftimer(name string) func() {
+	start := time.Now()
+	return func() {
+		fmt.Printf("%s took %v\n", name, time.Since(start))
+	}
 }

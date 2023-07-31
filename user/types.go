@@ -8,7 +8,7 @@ type User struct {
 	Name     string `json:"name"`
 }
 
-type UserOpts struct {
+type Opts struct {
 	Login    string
 	Age      int
 	Name     string

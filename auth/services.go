@@ -1,17 +1,23 @@
 package auth
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jcbbb/gosar/common"
+	"github.com/jcbbb/gosar/db"
+	"github.com/jcbbb/gosar/user"
 )
 
 var (
-	JWT_SECRET     = os.Getenv("JWT_SECRET")
-	JWT_EXPIRATION = os.Getenv("JWT_EXPIRATION")
+	JWT_SECRET = os.Getenv("JWT_SECRET")
 )
 
 func (sr SignupReq) validate() error {
@@ -68,13 +74,103 @@ func NewSession(userID int) *Session {
 	}
 }
 
-func Save(session *Session) (*Session, error) {
+func (session *Session) save(tx pgx.Tx) (*Session, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": session.UserID,
-		"exp": time.Now().Add(time.Duration(common.GetEnvInt("JWT_EXPIRATION", 1440)) * time.Minute),
+		"exp": time.Now().Add(time.Duration(JWT_EXPIRATION) * time.Second).Unix(),
 	})
 
-	tokenString, err := token.SignedString(os.Getenv("JWT_SECRET"))
+	tokenString, err := token.SignedString([]byte(JWT_SECRET))
+	if err != nil {
+		fmt.Println("ERR", err)
+		return nil, common.ErrInternal
+	}
 
-	return nil, nil
+	session.Token = tokenString
+
+	row := tx.QueryRow(
+		context.Background(),
+		"insert into sessions (user_id, token) values ($1, $2) returning id",
+		session.UserID, session.Token,
+	)
+
+	if err := row.Scan(&session.ID); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			return nil, common.ErrConflict("User already exists")
+		}
+
+		return nil, common.ErrInternal
+	}
+
+	return session, nil
+}
+
+func login(req LoginReq) (*Session, error) {
+	user, err := user.GetByLogin(req.Login)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := user.VerifyPassword(req.Password); err != nil {
+		return nil, err
+	}
+
+	tx, err := db.Pool.BeginTx(context.TODO(), pgx.TxOptions{})
+
+	if err != nil {
+		return nil, common.ErrInternal
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback(context.TODO())
+		} else {
+			tx.Commit(context.TODO())
+		}
+	}()
+
+	session, err := NewSession(user.ID).save(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
+}
+
+func signup(req SignupReq) (*Session, error) {
+	// ignore error as it's already validated
+	age, _ := strconv.Atoi(req.Age)
+
+	tx, err := db.Pool.BeginTx(context.TODO(), pgx.TxOptions{})
+	if err != nil {
+		return nil, common.ErrInternal
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback(context.TODO())
+		} else {
+			tx.Commit(context.TODO())
+		}
+	}()
+
+	user, err := user.New(user.Opts{
+		Name:     req.Name,
+		Password: req.Password,
+		Age:      age,
+		Login:    req.Login,
+	}).Save(tx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := NewSession(user.ID).save(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
 }

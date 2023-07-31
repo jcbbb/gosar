@@ -36,6 +36,10 @@ func main() {
 		"POST": auth.HandleSignup,
 	}))
 
+	mux.HandleFunc("/user/auth", common.MakeHandlerFuncMap(map[string]common.ApiFunc{
+		"POST": auth.HandleLogin,
+	}))
+
 	log.Fatal(http.ListenAndServe(":3000", mux))
 	defer db.Pool.Close()
 }

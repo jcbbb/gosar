@@ -1,10 +1,10 @@
 package auth
 
 type Session struct {
-	ID     string
-	UserID int
-	Active bool
-	Token  string
+	ID     string `json:"id"`
+	UserID int    `json:"user_id"`
+	Active bool   `json:"active"`
+	Token  string `json:"token"`
 }
 
 type SignupReq struct {
