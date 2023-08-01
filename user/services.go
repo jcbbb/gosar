@@ -15,6 +15,10 @@ import (
 func (apr AddPhoneReq) validate() error {
 	errors := make(map[string]string, 0)
 
+	if len(apr.Phone) > 12 {
+		errors["phone"] = "Phone number must be maximum 12 characters"
+	}
+
 	if len(apr.Phone) == 0 {
 		errors["phone"] = "Phone is required"
 	}
@@ -32,6 +36,10 @@ func (apr AddPhoneReq) validate() error {
 
 func (upr UpdatePhoneReq) validate() error {
 	errors := make(map[string]string, 0)
+
+	if len(upr.Phone) > 12 {
+		errors["phone"] = "Phone number must be maximum 12 characters"
+	}
 
 	if len(upr.Phone) == 0 {
 		errors["phone"] = "Phone is required"
