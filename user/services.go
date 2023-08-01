@@ -213,19 +213,18 @@ func updatePhone(opts UpdatePhoneOpts) (*Phone, error) {
 		IsFax:       opts.isFax,
 	}
 
-	row := db.Pool.QueryRow(
+	res, err := db.Pool.Exec(
 		context.Background(),
 		"update user_phones set description = $1, phone = $2, is_fax = $3 where id = $4 returning id",
 		opts.description, opts.phone, opts.isFax, opts.id,
 	)
 
-	if err := row.Scan(&phone.ID); err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			return nil, common.ErrConflict("User already exists")
-		}
-
+	if err != nil {
 		return nil, common.ErrInternal
+	}
+
+	if res.RowsAffected() == 0 {
+		return nil, common.ErrNotFound(fmt.Sprintf("Phone with id %v not found", opts.id))
 	}
 
 	return &phone, nil
