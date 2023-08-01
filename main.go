@@ -42,10 +42,13 @@ func main() {
 		"GET": auth.EnsureAuth(user.HandleGetUser),
 	}))
 
+	mux.HandleFunc("/user/phone", common.MakeHandlerFuncMap(map[string]common.ApiFunc{
+		"POST": auth.EnsureAuth(user.HandleAddPhone),
+		"GET":  auth.EnsureAuth(user.HandleGetPhones),
+		"PUT":  auth.EnsureAuth(user.HandleUpdatePhone),
+	}))
+
 	mux.HandleFunc("/user/phone/", common.MakeHandlerFuncMap(map[string]common.ApiFunc{
-		"POST":   auth.EnsureAuth(user.HandleAddPhone),
-		"GET":    auth.EnsureAuth(user.HandleGetPhones),
-		"PUT":    auth.EnsureAuth(user.HandleUpdatePhone),
 		"DELETE": auth.EnsureAuth(user.HandleDeletePhone),
 	}))
 
