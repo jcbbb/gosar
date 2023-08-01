@@ -2,11 +2,9 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 )
 
 var (
@@ -64,6 +62,13 @@ func ErrConflict(message string) Error {
 	}
 }
 
+func ErrUnauthenticated(message string) Error {
+	return Error{
+		Message: message,
+		Code:    http.StatusUnauthorized,
+	}
+}
+
 func GetEnvInt(key string, def int) int {
 	s := os.Getenv(key)
 	if len(s) == 0 {
@@ -85,11 +90,4 @@ func GetEnvStr(key string, def string) string {
 	}
 
 	return s
-}
-
-func Perftimer(name string) func() {
-	start := time.Now()
-	return func() {
-		fmt.Printf("%s took %v\n", name, time.Since(start))
-	}
 }

@@ -24,9 +24,9 @@ type Phone struct {
 }
 
 type AddPhoneReq struct {
-	phone       string
-	description string
-	isFax       bool
+	Phone       string `json:"phone"`
+	Description string `json:"description"`
+	IsFax       bool   `json:"isFax"`
 }
 
 type AddPhoneOpts struct {
@@ -34,4 +34,24 @@ type AddPhoneOpts struct {
 	description string
 	isFax       bool
 	userId      int
+}
+
+type UpdatePhoneReq struct {
+	PhoneID     *int   `json:"phone_id"`
+	Phone       string `json:"phone"`
+	IsFax       bool   `json:"is_fax"`
+	Description string `json:"description"`
+}
+
+type UpdatePhoneOpts struct {
+	id          int
+	phone       string
+	isFax       bool
+	description string
+	userId      int
+}
+
+type DeletePhoneOpts struct {
+	id     int
+	userId int
 }

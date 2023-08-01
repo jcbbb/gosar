@@ -3,12 +3,11 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jcbbb/gosar/common"
@@ -75,14 +74,18 @@ func NewSession(userID int) *Session {
 }
 
 func (session *Session) save(tx pgx.Tx) (*Session, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": session.UserID,
-		"exp": time.Now().Add(time.Duration(JWT_EXPIRATION) * time.Second).Unix(),
-	})
+	claims := &jwt.RegisteredClaims{
+		Subject:   strconv.Itoa(session.UserID),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(JWT_EXPIRATION) * time.Second)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Audience:  []string{"https://gosar.homeleess.dev"},
+		Issuer:    "https://gosar.homeless.dev",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	tokenString, err := token.SignedString([]byte(JWT_SECRET))
 	if err != nil {
-		fmt.Println("ERR", err)
 		return nil, common.ErrInternal
 	}
 
@@ -143,7 +146,8 @@ func signup(req SignupReq) (*Session, error) {
 	// ignore error as it's already validated
 	age, _ := strconv.Atoi(req.Age)
 
-	tx, err := db.Pool.BeginTx(context.TODO(), pgx.TxOptions{})
+	tx, err := db.Pool.Begin(context.TODO())
+
 	if err != nil {
 		return nil, common.ErrInternal
 	}
@@ -168,6 +172,7 @@ func signup(req SignupReq) (*Session, error) {
 	}
 
 	session, err := NewSession(user.ID).save(tx)
+
 	if err != nil {
 		return nil, err
 	}

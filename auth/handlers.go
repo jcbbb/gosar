@@ -1,9 +1,12 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jcbbb/gosar/common"
 )
 
@@ -78,4 +81,34 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) error {
 
 	http.SetCookie(w, &cookie)
 	return common.WriteJSON(w, http.StatusOK, session)
+}
+
+func EnsureAuth(next common.ApiFunc) common.ApiFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		tokenCookie, err := r.Cookie(SESSION_COOKIE_NAME)
+
+		if err != nil {
+			return common.ErrUnauthenticated("Session cookie missing")
+		}
+
+		token, err := jwt.ParseWithClaims(tokenCookie.Value, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, common.ErrBadRequest(fmt.Sprintf("Unexpected signing method: %v", token.Header["alg"]))
+			}
+
+			return []byte(JWT_SECRET), nil
+		})
+
+		// TODO: validate claims
+		claims, ok := token.Claims.(*jwt.RegisteredClaims)
+
+		if !ok && !token.Valid {
+			return common.ErrUnauthenticated("Invalid token")
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "claims", claims)
+
+		return next(w, r.WithContext(ctx))
+	}
 }

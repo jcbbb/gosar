@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,8 +15,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello world")
-
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
@@ -45,7 +42,10 @@ func main() {
 		"GET": user.HandleGetUser,
 	}))
 	mux.HandleFunc("/user/phone", common.MakeHandlerFuncMap(map[string]common.ApiFunc{
-		"POST": user.HandleAddPhone,
+		"POST":   auth.EnsureAuth(user.HandleAddPhone),
+		"GET":    auth.EnsureAuth(user.HandleGetPhones),
+		"PUT":    auth.EnsureAuth(user.HandleUpdatePhone),
+		"DELETE": auth.EnsureAuth(user.HandleDeletePhone),
 	}))
 
 	log.Fatal(http.ListenAndServe(":3000", mux))
