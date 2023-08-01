@@ -12,7 +12,7 @@ import (
 	"github.com/jcbbb/gosar/common"
 	"github.com/jcbbb/gosar/db"
 	"github.com/jcbbb/gosar/user"
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 var (
@@ -21,11 +21,7 @@ var (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-
+	var err error
 	db.Pool, err = pgxpool.New(context.Background(), POSTGRES_URI)
 
 	if err != nil {
