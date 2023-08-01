@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -223,13 +224,15 @@ func updatePhone(opts UpdatePhoneOpts) (*Phone, error) {
 }
 
 func deletePhone(opts DeletePhoneOpts) (int, error) {
-	row := db.Pool.QueryRow(
-		context.Background(),
-		"delete from user_phones where id = $1 and user_id = $2",
-		opts.id, opts.userId,
-	)
+	res, err := db.Pool.Exec(context.Background(), "delete from user_phones where id = $1 and user_id = $2", opts.id, opts.userId)
 
-	_ = row
+	if err != nil {
+		return 0, common.ErrInternal
+	}
 
-	return 0, nil
+	if res.RowsAffected() == 0 {
+		return 0, common.ErrNotFound(fmt.Sprintf("Phone with id %v not found", opts.id))
+	}
+
+	return opts.id, nil
 }

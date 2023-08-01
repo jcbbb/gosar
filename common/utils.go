@@ -69,6 +69,13 @@ func ErrUnauthenticated(message string) Error {
 	}
 }
 
+func ErrNotFound(message string) Error {
+	return Error{
+		Message: message,
+		Code:    http.StatusNotFound,
+	}
+}
+
 func GetEnvInt(key string, def int) int {
 	s := os.Getenv(key)
 	if len(s) == 0 {

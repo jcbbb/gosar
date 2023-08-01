@@ -95,7 +95,25 @@ func HandleUpdatePhone(w http.ResponseWriter, r *http.Request) error {
 }
 
 func HandleDeletePhone(w http.ResponseWriter, r *http.Request) error {
-	//phoneId := r.URL.Path[len("/user/phone/"):]
+	phoneId := r.URL.Path[len("/user/phone/"):]
 
-	return nil
+	id, err := strconv.Atoi(phoneId)
+
+	if err != nil {
+		return common.ErrBadRequest("Phone id must an integer")
+	}
+
+	claims := r.Context().Value("claims").(*jwt.RegisteredClaims)
+	sub, _ := strconv.Atoi(claims.Subject)
+
+	result, err := deletePhone(DeletePhoneOpts{
+		id:     id,
+		userId: sub,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return common.WriteJSON(w, http.StatusOK, result)
 }
