@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,15 +15,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var (
+	POSTGRES_URI = os.Getenv("POSTGRES_URI")
+	ADDR         = common.GetEnvStr("ADDR", ":3000")
+)
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
 
-	postgresUri := os.Getenv("POSTGRES_URI")
-
-	db.Pool, err = pgxpool.New(context.Background(), postgresUri)
+	db.Pool, err = pgxpool.New(context.Background(), POSTGRES_URI)
 
 	if err != nil {
 		panic(err)
@@ -49,6 +53,8 @@ func main() {
 		"DELETE": auth.EnsureAuth(user.HandleDeletePhone),
 	}))
 
-	log.Fatal(http.ListenAndServe(":3000", mux))
+	fmt.Printf("Server started at %v\n", ADDR)
+	log.Fatal(http.ListenAndServe(ADDR, mux))
+
 	defer db.Pool.Close()
 }
